@@ -1,0 +1,5 @@
+model-lstm-intensity-anger.h5
+model-lstm-intensity-fear.h5
+model-lstm-intensity-joy.h5
+model-lstm-intensity-sadness.h5
+model-lstm-multilabel.h5

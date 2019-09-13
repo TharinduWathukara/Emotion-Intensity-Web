@@ -1,0 +1,425 @@
+print("Importing packages")
+import emoji
+from string import punctuation
+from os import listdir
+from numpy import array
+from keras.preprocessing.text import Tokenizer
+from keras.preprocessing.sequence import pad_sequences
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.layers import Flatten
+from keras.layers import Embedding
+from keras.layers.convolutional import Conv1D
+from keras.layers.convolutional import MaxPooling1D
+
+
+import re
+import matplotlib
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.metrics import accuracy_score
+from sklearn.multiclass import OneVsRestClassifier
+from nltk.corpus import stopwords
+stop_words = set(stopwords.words('english'))
+from sklearn.svm import LinearSVC
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import Pipeline
+import seaborn as sns
+from nltk.tokenize import word_tokenize
+from sklearn.base import TransformerMixin
+
+
+
+from keras.models import Sequential
+from keras.layers import Dense, Activation, Embedding, Flatten, GlobalMaxPool1D, Dropout, Conv1D
+from keras.callbacks import ReduceLROnPlateau, EarlyStopping, ModelCheckpoint
+from keras.losses import binary_crossentropy
+from keras.optimizers import Adam
+
+
+
+import os
+from sklearn.preprocessing import MultiLabelBinarizer
+from keras.layers import Input, Dense
+from sklearn.metrics import jaccard_similarity_score
+
+
+print("Importing datasets")
+train_data = pd.read_csv('./../train.csv')
+test_data = pd.read_csv('./../test.csv')
+dev_data = pd.read_csv('./../dev.csv')
+
+
+print("Defining preprocessing functions")
+def cleanHtml(sentence):
+    cleanr = re.compile('<.*?>')
+    cleantext = re.sub(cleanr, ' ', str(sentence))
+    return cleantext
+
+
+def cleanPunc(sentence): #function to clean the word of any punctuation or special characters
+    cleaned = re.sub(r'[?|!|\'|"|#]',r'',sentence)
+    cleaned = re.sub(r'[.|,|)|(|\|/]',r' ',cleaned)
+    cleaned = cleaned.strip()
+    cleaned = cleaned.replace("\n"," ")
+    return cleaned
+
+
+def keepAlpha(sentence):
+    alpha_sent = ""
+    for word in sentence.split():
+        alpha_word = re.sub('[^a-z A-Z]+', ' ', word)
+        alpha_sent += alpha_word
+        alpha_sent += " "
+    alpha_sent = alpha_sent.strip()
+    return alpha_sent
+
+def clean_text(text):
+    text = text.lower()
+    text = re.sub(r"what's", "what is ", text)
+    text = re.sub(r"\'s", " ", text)
+    text = re.sub(r"\'ve", " have ", text)
+    text = re.sub(r"can't", "can not ", text)
+    text = re.sub(r"n't", " not ", text)
+    text = re.sub(r"i'm", "i am ", text)
+    text = re.sub(r"\'re", " are ", text)
+    text = re.sub(r"\'d", " would ", text)
+    text = re.sub(r"\'ll", " will ", text)
+    text = re.sub(r"\'scuse", " excuse ", text)
+    text = re.sub('\W', ' ', text)
+    text = re.sub('\s+', ' ', text)
+    text = text.strip(' ')
+    return text
+
+def replaceUnderScore(sentence): #function to clean the word of any punctuation or special characters
+    modified = ""
+    for word in sentence.split():
+        word = word.replace("_"," ")
+        modified += word
+        modified += " "
+    modified = modified.strip()
+    return modified
+
+def replaceSmileys(sentence):
+    SMILEYS = {
+        ":-)":"smile",
+        ":-]":"smile",
+        ":-3":"smile",
+        ":->":"smile",
+        "8-)":"smile",
+        ":-}":"smile",
+        ":)":"smile",
+        ":]":"smile",
+        ":3":"smile",
+        ":>":"smile",
+        "8)":"smile",
+        ":}":"smile",
+        ":o)":"smile",
+        ":c)":"smile",
+        ":^)":"smile",
+        "=]":"smile",
+        "=)":"smile",
+        ":-))":"smile",
+        ":-D":"smile",
+        "8-D":"smile",
+        "x-D":"smile",
+        "X-D":"smile",
+        ":D":"smile",
+        "8D":"smile",
+        "xD":"smile",
+        "XD":"smile",
+        ":-(":"sad",
+        ":-c":"sad",
+        ":-<":"sad",
+        ":-[":"sad",
+        ":(":"sad",
+        ":c":"sad",
+        ":<":"sad",
+        ":[":"sad",
+        ":-||":"sad",
+        ">:[":"sad",
+        ":{":"sad",
+        ":@":"sad",
+        ">:(":"sad",
+        ":'-('":"sad",
+        ":'('":"sad",
+        ":-P":"playful",
+        "X-P":"playful",
+        "x-p":"playful",
+        ":-p":"playful",
+        ":-b":"playful",
+        ":P":"playful",
+        "XP":"playful",
+        "xp":"playful",
+        ":p":"playful",
+        ":b":"playful",
+        "<3":"love"
+        }
+    words = sentence.split()
+    reformed = [SMILEYS[word] if word in SMILEYS else word for word in words]
+    sentence = " ".join(reformed)
+    return sentence
+
+def replaceEmojis(sentence):
+    sentence = emoji.demojize(sentence)
+    sentence = sentence.replace(":"," ")
+    sentence = ' '.join(sentence.split())
+    return sentence
+
+
+categories = ['anger',  'disgust', 'fear','happiness','sadness','surprise']
+
+
+df_i_processed_test=test_data
+df_i_processed_test['happiness']=[max(df_i_processed_test['joy'][index],df_i_processed_test['optimism'][index]) for index in range(3259)]
+df_i_processed_test['sadness']=[max(df_i_processed_test['sadness'][index],df_i_processed_test['pessimism'][index]) for index in range(3259)]
+df_i_processed_test=df_i_processed_test.drop(['anticipation', 'trust','love','optimism','pessimism','joy'], axis=1)
+df_i_processed_test['Tweet'] = df_i_processed_test['Tweet'].map(lambda com : clean_text(com))
+
+
+df_i_processed_train=train_data
+df_i_processed_train['happiness']=[max(df_i_processed_train['joy'][index],df_i_processed_train['optimism'][index]) for index in range(6838)]
+df_i_processed_train['sadness']=[max(df_i_processed_train['sadness'][index],df_i_processed_train['pessimism'][index]) for index in range(6838)]
+df_i_processed_train=df_i_processed_train.drop(['anticipation', 'trust','love','optimism','pessimism','joy'], axis=1)
+df_i_processed_train['Tweet'] = df_i_processed_train['Tweet'].map(lambda com : clean_text(com))
+
+
+df_i_processed_dev=dev_data
+df_i_processed_dev['happiness']=[max(df_i_processed_dev['joy'][index],df_i_processed_dev['optimism'][index]) for index in range(886)]
+df_i_processed_dev['sadness']=[max(df_i_processed_dev['sadness'][index],df_i_processed_dev['pessimism'][index]) for index in range(886)]
+df_i_processed_dev=df_i_processed_dev.drop(['anticipation', 'trust','love','optimism','pessimism','joy'], axis=1)
+df_i_processed_dev['Tweet'] = df_i_processed_dev['Tweet'].map(lambda com : clean_text(com))
+
+
+print("Data Preprocessing")
+
+def pre_process_data(data):
+    
+    data['Tweet'] = data['Tweet'].apply(replaceSmileys)
+    data['Tweet'] = data['Tweet'].apply(clean_text)
+    data['Tweet'] = data['Tweet'].str.lower()
+    data['Tweet'] = data['Tweet'].apply(cleanHtml)
+    data['Tweet'] = data['Tweet'].apply(replaceEmojis)
+    data['Tweet'] = data['Tweet'].apply(replaceUnderScore)
+    data['Tweet'] = data['Tweet'].apply(cleanPunc)
+    data['Tweet'] = data['Tweet'].apply(keepAlpha)
+    return data
+
+data_test=df_i_processed_test
+data_train=df_i_processed_train
+data_dev=df_i_processed_dev
+
+data_train = pre_process_data(data_train)
+data_dev = pre_process_data(data_dev)
+data_test = pre_process_data(data_test)
+
+print("Removing stopwords")
+stop_words = set(stopwords.words('english'))
+stop_words.update(['zero','one','two','three','four','five','six','seven','eight','nine','ten','may','also','across','among','beside','however','yet','within'])
+re_stop_words = re.compile(r"\b(" + "|".join(stop_words) + ")\\W", re.I)
+
+def removeStopWords(sentence):
+    global re_stop_words
+    return re_stop_words.sub(" ", sentence)
+
+
+data_train['Tweet'] = data_train['Tweet'].apply(removeStopWords)
+data_test['Tweet'] = data_test['Tweet'].apply(removeStopWords)
+data_dev['Tweet'] = data_dev['Tweet'].apply(removeStopWords)
+
+
+print("Importing wordembedding - glove")
+def _load_words():
+    E = {}
+    vocab = []
+    with open('./../glove.840B.300d.txt', 'r', encoding="utf8") as file:
+        for i, line in enumerate(file):
+            l = line.split(' ')
+            if l[0].isalpha():
+                v = [float(i) for i in l[1:]]
+                E[l[0]] = np.array(v)
+                vocab.append(l[0])
+    return np.array(vocab), E  
+
+
+V,E=_load_words()
+
+
+def _get_word(v,E,C):
+    for i, emb in enumerate(E):
+        if np.array_equal(emb, v):
+            return V[i]
+    return None
+
+
+data_all = pd.concat([data_train, data_test, data_dev])
+
+print("Tokenizing")
+tokenizer = Tokenizer()
+
+tokenizer.fit_on_texts(data_all['Tweet'])
+
+
+encoded_docs_train = tokenizer.texts_to_sequences(data_train['Tweet'])
+encoded_docs_test = tokenizer.texts_to_sequences(data_test['Tweet'])
+encoded_docs_dev = tokenizer.texts_to_sequences(data_dev['Tweet'])
+
+
+max_length_train = max([len(s) for s in encoded_docs_train])
+max_length_test = max([len(s) for s in encoded_docs_test])
+max_length_dev = max([len(s) for s in encoded_docs_dev])
+
+max_length = max(max_length_train, max_length_test, max_length_dev)
+
+x_train = pad_sequences(encoded_docs_train, maxlen=max_length, padding='post')
+x_test = pad_sequences(encoded_docs_test, maxlen=max_length, padding='post')
+x_dev = pad_sequences(encoded_docs_dev, maxlen=max_length, padding='post')
+
+
+word_index = tokenizer.word_index
+
+
+embedding_matrix = np.zeros((len(word_index) + 1, 300))
+for word, i in word_index.items():
+    embedding_vector = E.get(word)
+    if embedding_vector is not None:
+        # words not found in embedding index will be all-zeros.
+        embedding_matrix[i] = embedding_vector
+
+
+embedding_layer = Embedding(len(word_index) + 1,
+                            300,
+                            weights=[embedding_matrix],
+                            input_length=max_length,
+                            trainable=True)
+
+
+multilabel_binarizer_train = MultiLabelBinarizer()
+multilabel_binarizer_test = MultiLabelBinarizer()
+multilabel_binarizer_dev = MultiLabelBinarizer()
+
+
+labels_train = [list(x) for x in data_train[categories].values.tolist()]
+labels_test = [list(x) for x in data_test[categories].values.tolist()]
+labels_dev = [list(x) for x in data_dev[categories].values.tolist()]
+
+
+labels_train=[[ n for n in range(6) if s[n]==1 ] for s in labels_train]
+labels_test=[[ n for n in range(6) if s[n]==1 ] for s in labels_test]
+labels_dev=[[ n for n in range(6) if s[n]==1 ] for s in labels_dev]
+
+
+multilabel_binarizer_train.fit(labels_train)
+y_train=multilabel_binarizer_train.fit_transform(labels_train)
+
+multilabel_binarizer_test.fit(labels_test)
+y_test=multilabel_binarizer_test.fit_transform(labels_test)
+
+multilabel_binarizer_dev.fit(labels_dev)
+y_dev=multilabel_binarizer_dev.fit_transform(labels_dev)
+
+
+sequence_input = Input(shape=(max_length,), dtype='int32')
+embedded_sequences = embedding_layer(sequence_input)
+
+
+vocab_size = len(tokenizer.word_index) + 1
+
+
+filter_length = 300
+
+
+print("Model defining")
+model = Sequential()
+#model.add(Embedding(vocab_size, 20, input_length=max_length))
+model.add(embedding_layer)
+model.add(Dropout(0.1))
+model.add(Conv1D(filter_length, 5, padding='valid', activation='relu', strides=1))
+model.add(GlobalMaxPool1D())
+#model.add(MaxPooling1D(3))
+model.add(Dense(30))
+model.add(Activation('sigmoid'))
+model.add(Dense(6))#num_classes
+model.add(Activation('sigmoid'))
+
+model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['categorical_accuracy'])
+model.summary()
+
+print("Model training")
+model.fit(x_train, y_train,
+        #class_weight=class_weight,
+        # epochs=20,
+        epochs=5,
+        batch_size=15,
+        validation_data=(x_dev,y_dev))
+
+
+# from keras.models import load_model
+# cnn_model = load_model('model-conv1d.h5')
+metrics = model.evaluate(x_dev, y_dev)
+print("{}: {}".format(model.metrics_names[0], metrics[0]))
+print("{}: {}".format(model.metrics_names[1], metrics[1]))
+
+
+# predictions=model.predict(x_dev)
+
+
+# total=[]
+# for x in predictions:
+#     sub=[]
+#     for label_val in x:
+#         if label_val>=0.5:
+#             sub.append(1)
+#         else:
+#             sub.append(0)
+#     total.append(sub)
+
+# jaccard_similarity_score(np.array(total),y_dev)
+
+
+# for n in range(0,6):
+#     total_em=[x[n] for x in total]
+#     ytest_em=[x[n] for x in y_test]
+
+#     print (jaccard_similarity_score(np.array(total_em),np.array(ytest_em)))
+
+
+
+def PredictMultiEmotions(text):
+    text = replaceSmileys(text)
+    text = clean_text(text)
+    text = text.lower()
+    text = cleanHtml(text)
+    text = replaceEmojis(text)
+    text = replaceUnderScore(text)
+    text = cleanPunc(text)
+    text = keepAlpha(text)
+    text = removeStopWords(text)
+    
+    encoded_text = tokenizer.texts_to_sequences(text)
+    text_encoded_padded = pad_sequences(encoded_text, maxlen=max_length, padding='post')
+    predictions_for_text = model.predict(text_encoded_padded)
+    
+    return predictions_for_text[0]
+
+
+# example = ["i like it very"]
+# example_encoded = tokenizer.texts_to_sequences(example)
+# example_encoded_padded = pad_sequences(example_encoded, maxlen=max_length, padding='post')
+# predictions_for_example = model.predict(example_encoded_padded)
+# predictions_for_example
+
+
+# example = ["this is garbage"]
+# example_encoded = tokenizer.texts_to_sequences(example)
+# example_encoded_padded = pad_sequences(example_encoded, maxlen=max_length, padding='post')
+# predictions_for_example = model.predict(example_encoded_padded)
+# predictions_for_example
+
+
+print('Emotion model complete!')
+
