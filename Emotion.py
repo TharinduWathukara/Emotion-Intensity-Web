@@ -185,6 +185,49 @@ def splitHashtags(sentence):
     return ' '.join(sentence)
 
 
+sentiment_emotion_lex_file_path ="NRC-Emotion-Lexicon-Wordlevel-v0.92.txt"
+def get_affect_presence_list(emotion):
+    count=-1
+    word_list = list()
+    alist = []
+    with open(sentiment_emotion_lex_file_path) as sentiment_emotion_lex_file:
+        for line in sentiment_emotion_lex_file:
+            count=count+1
+            line=line.replace(" ","\t")
+            word_array = line.replace("\n", "").split("\t")
+            try:
+                if (word_array[1] == emotion and word_array[2] == '1'):
+                    word_list.append(word_array[0])
+            except:
+                print(line)
+                print(count)
+                
+    return word_list
+
+sentiment_emo_lex_word_list_anger = get_affect_presence_list('anger')
+sentiment_emo_lex_word_list_fear = get_affect_presence_list('fear')
+sentiment_emo_lex_word_list_joy = get_affect_presence_list('joy')
+sentiment_emo_lex_word_list_sadness = get_affect_presence_list('sadness')
+
+negs=['no','not','neither','nor']
+
+def negationHandling(Tweet):
+    sentence = Tweet.split(' ')
+    for i in range(len(sentence)):
+        if sentence[i] in negs:
+            if(i<len(sentence)-1):
+                if sentence[i+1] in sentiment_emo_lex_word_list_joy:
+                    Tweet = Tweet.replace(sentence[i]+' '+sentence[i+1], "unsatisfied",1)
+                if sentence[i+1] in sentiment_emo_lex_word_list_sadness:
+                    Tweet = Tweet.replace(sentence[i]+' '+sentence[i+1], "satisfied",1)
+                if sentence[i+1] in sentiment_emo_lex_word_list_fear:
+                    Tweet = Tweet.replace(sentence[i]+' '+sentence[i+1], "calmness",1)
+                if sentence[i+1] in sentiment_emo_lex_word_list_anger:
+                    Tweet = Tweet.replace(sentence[i]+' '+sentence[i+1], "peace",1)
+    return Tweet
+
+
+
 stop_words = set(stopwords.words('english'))
 stop_words.update(['zero','one','two','three','four','five','six','seven','eight','nine','ten','may','also','across','among','beside','however','yet','within'])
 re_stop_words = re.compile(r"\b(" + "|".join(stop_words) + ")\\W", re.I)
@@ -197,28 +240,28 @@ def removeStopWords(sentence):
 categories = ['anger',  'disgust', 'fear','happiness','sadness','surprise']
 
 
-print("Importing wordembedding - glove")
-def _load_words():
-    E = {}
-    vocab = []
-    with open('./../glove.840B.300d.txt', 'r', encoding="utf8") as file:
-        for i, line in enumerate(file):
-            l = line.split(' ')
-            if l[0].isalpha():
-                v = [float(i) for i in l[1:]]
-                E[l[0]] = np.array(v)
-                vocab.append(l[0])
-    return np.array(vocab), E  
+# print("Importing wordembedding - glove")
+# def _load_words():
+#     E = {}
+#     vocab = []
+#     with open('./../glove.840B.300d.txt', 'r', encoding="utf8") as file:
+#         for i, line in enumerate(file):
+#             l = line.split(' ')
+#             if l[0].isalpha():
+#                 v = [float(i) for i in l[1:]]
+#                 E[l[0]] = np.array(v)
+#                 vocab.append(l[0])
+#     return np.array(vocab), E  
 
 
-V,E=_load_words()
+# V,E=_load_words()
 
 
-def _get_word(v,E,C):
-    for i, emb in enumerate(E):
-        if np.array_equal(emb, v):
-            return V[i]
-    return None
+# def _get_word(v,E,C):
+#     for i, emb in enumerate(E):
+#         if np.array_equal(emb, v):
+#             return V[i]
+#     return None
 
 
 print("Tokenizing")
@@ -239,12 +282,26 @@ joy_model = load_model('model-lstm-intensity-joy.h5')
 sadness_model = load_model('model-lstm-intensity-sadness.h5')
 
 
+
+anger = 0.5
+anticipation = 0.3
+disgust = 0.3
+fear = 0.5
+joy = 0.5
+love = 0.3
+optimism = 0.3
+pessimism = 0.3
+sadness = 0.5
+surprise = 0.2
+trust = 0.3
+
 def PredictMultiEmotions(text):
     text = replaceSmileys(text)
     text = splitHashtags(text)
     text = clean_text(text)
     text = text.lower()
     text = cleanHtml(text)
+    text = negationHandling(text)
     text = replaceEmojis(text)
     text = replaceUnderScore(text)
     text = cleanPunc(text)
@@ -260,33 +317,38 @@ def PredictMultiEmotions(text):
     predictions_for_text = model.predict(text_encoded_padded)
     
     emotions=[]
+    # for x in predictions_for_text:
+    #     for label_val in x:
+    #         emotions.append(label_val)
+
     for x in predictions_for_text:
-        for label_val in x:
-            emotions.append(label_val)
+        if x[0]>=anger:
+            emotions.append(1)
+        else:
+            emotions.append(0)
+        if x[1]>=fear:
+            emotions.append(1)
+        else:
+            emotions.append(0)
+        if x[2]>=joy:
+            emotions.append(1)
+        else:
+            emotions.append(0)
+        if x[3]>=sadness:
+            emotions.append(1)
+        else:
+            emotions.append(0)
 
     return emotions
 
 
-# example = ["i like it very"]
-# example_encoded = tokenizer.texts_to_sequences(example)
-# example_encoded_padded = pad_sequences(example_encoded, maxlen=max_length, padding='post')
-# predictions_for_example = model.predict(example_encoded_padded)
-# predictions_for_example
-
-
-example = ["this is garbage"]
-example_encoded = tokenizer.texts_to_sequences(example)
-example_encoded_padded = pad_sequences(example_encoded, maxlen=max_length, padding='post')
-predictions_for_example = model.predict(example_encoded_padded)
-print(predictions_for_example)
-
-
-def GetIntensity(text):
+def GetIntensity(text,emotions):
     text = replaceSmileys(text)
     text = splitHashtags(text)
     text = clean_text(text)
     text = text.lower()
     text = cleanHtml(text)
+    text = negationHandling(text)
     text = replaceEmojis(text)
     text = replaceUnderScore(text)
     text = cleanPunc(text)
@@ -300,17 +362,57 @@ def GetIntensity(text):
     encoded_text = tokenizer.texts_to_sequences(blist)
     text_encoded_padded = pad_sequences(encoded_text, maxlen=max_length, padding='post')
     
-    anger = anger_model.predict(text_encoded_padded)
-    fear = fear_model.predict(text_encoded_padded)
-    joy = joy_model.predict(text_encoded_padded)
-    sadness = sadness_model(text_encoded_padded)
+    if(emotions[0] == 1):
+        anger = anger_model.predict(text_encoded_padded)
+    else:
+        anger = 0
+
+    if(emotions[1] == 1):
+        fear = fear_model.predict(text_encoded_padded)
+    else:
+        fear = 0
+
+    if(emotions[2] == 1):
+        joy = joy_model.predict(text_encoded_padded)
+    else:
+        joy = 0
+
+    if(emotions[3] == 1):
+        sadness = sadness_model.predict(text_encoded_padded)
+    else:
+        sadness = 0
 
     output = []
-    output.append(anger[0][0])
-    output.append(fear[0][0])
-    output.append(joy[0][0])
-    output.append(sadness[0][0])
+    output.append(anger[0][0]*100)
+    output.append(fear[0][0]*100)
+    output.append(joy[0][0]*100)
+    output.append(sadness[0][0]*100)
 
     return output
+
+
+
+
+# example = ["i like it very"]
+# example_encoded = tokenizer.texts_to_sequences(example)
+# example_encoded_padded = pad_sequences(example_encoded, maxlen=max_length, padding='post')
+# predictions_for_example = model.predict(example_encoded_padded)
+# predictions_for_example
+
+
+example = ["I love to see the latest movie"]
+example_encoded = tokenizer.texts_to_sequences(example)
+example_encoded_padded = pad_sequences(example_encoded, maxlen=max_length, padding='post')
+predictions_for_example = model.predict(example_encoded_padded)
+predictions_for_example_anger = anger_model.predict(example_encoded_padded)
+predictions_for_example_fear = fear_model.predict(example_encoded_padded)
+predictions_for_example_joy = joy_model.predict(example_encoded_padded)
+predictions_for_example_sad = sadness_model.predict(example_encoded_padded)
+print(predictions_for_example)
+print(predictions_for_example_anger)
+print(predictions_for_example_fear)
+print(predictions_for_example_joy)
+print(predictions_for_example_sad)
+
 
 print('Emotion model complete!')

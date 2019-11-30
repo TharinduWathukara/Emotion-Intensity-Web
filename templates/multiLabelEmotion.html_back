@@ -33,6 +33,20 @@
   
       {% if ( multiLabel[1]  == 1): %}
       <div class="col">
+        <p class="font-weight-bold text-center">Disgust</p>
+        <img style="border-radius: 50%;" class="img-fluid hoverable" src="{{url_for('static', filename='disgust.png')}}" alt="Disgust">
+        <!-- <p class="font-weight-bold text-center">90%</p> -->
+      </div>
+      {% else: %}
+      <div class="col" style="opacity:0.05">
+        <p class="font-weight-bold text-center">Disgust</p>
+        <img style="border-radius: 50%;" class="img-fluid hoverable" src="{{url_for('static', filename='disgust.png')}}" alt="Disgust">
+        <!-- <p class="font-weight-bold text-center">90%</p> -->
+      </div>
+      {% endif %}
+  
+      {% if ( multiLabel[2]  == 1): %}
+      <div class="col">
         <p class="font-weight-bold text-center">Fear</p>
         <img style="border-radius: 50%;" class="img-fluid hoverable" src="{{url_for('static', filename='fear.png')}}" alt="Fear">
         <!-- <p class="font-weight-bold text-center">90%</p> -->
@@ -45,7 +59,7 @@
       </div>
       {% endif %}
   
-      {% if ( multiLabel[2]  == 1): %}
+      {% if ( multiLabel[3]  == 1): %}
       <div class="col">
         <p class="font-weight-bold text-center">Happiness</p>
         <img style="border-radius: 50%;" class="img-fluid hoverable" src="{{url_for('static', filename='happy.png')}}" alt="Happiness">
@@ -59,7 +73,7 @@
       </div>
       {% endif %}
   
-      {% if ( multiLabel[3]  == 1): %}
+      {% if ( multiLabel[4]  == 1): %}
       <div class="col">
         <p class="font-weight-bold text-center">Sadness</p>
         <img style="border-radius: 50%;" class="img-fluid hoverable" src="{{url_for('static', filename='sad.png')}}" alt="Sadness">
@@ -69,6 +83,20 @@
       <div class="col" style="opacity:0.05">
         <p class="font-weight-bold text-center">Sadness</p>
         <img style="border-radius: 50%;" class="img-fluid hoverable" src="{{url_for('static', filename='sad.png')}}" alt="Sadness">
+        <!-- <p class="font-weight-bold text-center">90%</p> -->
+      </div>
+      {% endif %}
+  
+      {% if ( multiLabel[5]  == 1): %}
+      <div class="col">
+        <p class="font-weight-bold text-center">Surprise</p>
+        <img style="border-radius: 50%;" class="img-fluid hoverable" src="{{url_for('static', filename='surprise.png')}}" alt="Surprise">
+        <!-- <p class="font-weight-bold text-center">90%</p> -->
+      </div>
+      {% else: %}
+      <div class="col" style="opacity:0.05">
+        <p class="font-weight-bold text-center">Surprise</p>
+        <img style="border-radius: 50%;" class="img-fluid hoverable" src="{{url_for('static', filename='surprise.png')}}" alt="Surprise">
         <!-- <p class="font-weight-bold text-center">90%</p> -->
       </div>
       {% endif %}
