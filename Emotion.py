@@ -316,28 +316,28 @@ def PredictMultiEmotions(text):
     text_encoded_padded = pad_sequences(encoded_text, maxlen=max_length, padding='post')
     predictions_for_text = model.predict(text_encoded_padded)
     
-    emotions=[]
+    emotions=dict()
     # for x in predictions_for_text:
     #     for label_val in x:
     #         emotions.append(label_val)
 
     for x in predictions_for_text:
-        if x[0]>=anger:
-            emotions.append(1)
+        if x[3]>=anger:
+            emotions['anger'] = 1
         else:
-            emotions.append(0)
+            emotions['anger'] = 0
         if x[1]>=fear:
-            emotions.append(1)
+            emotions['fear'] = 1
         else:
-            emotions.append(0)
+            emotions['fear'] = 0
         if x[2]>=joy:
-            emotions.append(1)
+            emotions['joy'] = 1
         else:
-            emotions.append(0)
-        if x[3]>=sadness:
-            emotions.append(1)
+            emotions['joy'] = 0
+        if x[0]>=sadness:
+            emotions['sadness'] = 1
         else:
-            emotions.append(0)
+            emotions['sadness'] = 0
 
     return emotions
 
@@ -362,31 +362,35 @@ def GetIntensity(text,emotions):
     encoded_text = tokenizer.texts_to_sequences(blist)
     text_encoded_padded = pad_sequences(encoded_text, maxlen=max_length, padding='post')
     
-    if(emotions[0] == 1):
-        anger = anger_model.predict(text_encoded_padded)
+    if(emotions['anger'] == 1):
+        anger = anger_model.predict(text_encoded_padded)[0][0]
+        anger = float("{0:.4f}".format(anger))
     else:
         anger = 0
 
-    if(emotions[1] == 1):
-        fear = fear_model.predict(text_encoded_padded)
+    if(emotions['fear'] == 1):
+        fear = fear_model.predict(text_encoded_padded)[0][0]
+        fear = float("{0:.4f}".format(fear))
     else:
         fear = 0
 
-    if(emotions[2] == 1):
-        joy = joy_model.predict(text_encoded_padded)
+    if(emotions['joy'] == 1):
+        joy = joy_model.predict(text_encoded_padded)[0][0]
+        joy = float("{0:.4f}".format(joy))
     else:
         joy = 0
 
-    if(emotions[3] == 1):
-        sadness = sadness_model.predict(text_encoded_padded)
+    if(emotions['sadness'] == 1):
+        sadness = sadness_model.predict(text_encoded_padded)[0][0]
+        sadness = float("{0:.4f}".format(sadness))
     else:
         sadness = 0
 
     output = []
-    output.append(anger[0][0]*100)
-    output.append(fear[0][0]*100)
-    output.append(joy[0][0]*100)
-    output.append(sadness[0][0]*100)
+    output.append(anger*100)
+    output.append(fear*100)
+    output.append(joy*100)
+    output.append(sadness*100)
 
     return output
 
