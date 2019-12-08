@@ -227,6 +227,23 @@ def negationHandling(Tweet):
     return Tweet
 
 
+def pre_process_data(data):
+    
+    data['Tweet'] = data['Tweet'].apply(replaceSmileys)
+    data['Tweet'] = data['Tweet'].apply(clean_text)
+    data['Tweet'] = data['Tweet'].str.lower()
+    data['Tweet'] = data['Tweet'].apply(cleanHtml)
+    data['Tweet'] = data['Tweet'].apply(negationHandling)
+    data['Tweet'] = data['Tweet'].apply(replaceEmojis)
+    data['Tweet'] = data['Tweet'].apply(replaceUnderScore)
+#     data['Tweet'] = data['Tweet'].apply(splitHashtags)
+    data['Tweet'] = data['Tweet'].apply(cleanPunc)
+    data['Tweet'] = data['Tweet'].apply(keepAlpha)
+#     data['Tweet'] = data['Tweet'].apply(spellCorrect)
+    return data
+
+# Preprocess dataset
+data_all = pre_process_data(data_all)
 
 stop_words = set(stopwords.words('english'))
 stop_words.update(['zero','one','two','three','four','five','six','seven','eight','nine','ten','may','also','across','among','beside','however','yet','within'])
@@ -236,6 +253,8 @@ def removeStopWords(sentence):
     global re_stop_words
     return re_stop_words.sub(" ", sentence)
 
+# Remove stop words from dataset
+data_all['Tweet'] = data_all['Tweet'].apply(removeStopWords)
 
 categories = ['anger',  'disgust', 'fear','happiness','sadness','surprise']
 
@@ -322,19 +341,19 @@ def PredictMultiEmotions(text):
     #         emotions.append(label_val)
 
     for x in predictions_for_text:
-        if x[3]>=anger:
+        if x[0]>=anger:
             emotions['anger'] = 1
         else:
             emotions['anger'] = 0
-        if x[1]>=fear:
+        if x[3]>=fear:
             emotions['fear'] = 1
         else:
             emotions['fear'] = 0
-        if x[2]>=joy:
+        if x[4]>=joy:
             emotions['joy'] = 1
         else:
             emotions['joy'] = 0
-        if x[0]>=sadness:
+        if x[8]>=sadness:
             emotions['sadness'] = 1
         else:
             emotions['sadness'] = 0
