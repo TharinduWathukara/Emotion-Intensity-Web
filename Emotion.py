@@ -383,33 +383,33 @@ def GetIntensity(text,emotions):
     
     if(emotions['anger'] == 1):
         anger = anger_model.predict(text_encoded_padded)[0][0]
-        anger = float("{0:.4f}".format(anger))
+        anger = float("{0:.2f}".format(anger*100))
     else:
         anger = 0
 
     if(emotions['fear'] == 1):
         fear = fear_model.predict(text_encoded_padded)[0][0]
-        fear = float("{0:.4f}".format(fear))
+        fear = float("{0:.2f}".format(fear*100))
     else:
         fear = 0
 
     if(emotions['joy'] == 1):
         joy = joy_model.predict(text_encoded_padded)[0][0]
-        joy = float("{0:.4f}".format(joy))
+        joy = float("{0:.2f}".format(joy*100))
     else:
         joy = 0
 
     if(emotions['sadness'] == 1):
         sadness = sadness_model.predict(text_encoded_padded)[0][0]
-        sadness = float("{0:.4f}".format(sadness))
+        sadness = float("{0:.2f}".format(sadness*100))
     else:
         sadness = 0
 
     output = []
-    output.append(anger*100)
-    output.append(fear*100)
-    output.append(joy*100)
-    output.append(sadness*100)
+    output.append(anger)
+    output.append(fear)
+    output.append(joy)
+    output.append(sadness)
 
     return output
 

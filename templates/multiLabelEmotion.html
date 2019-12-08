@@ -15,7 +15,7 @@
 
   {% if multiLabel: %}
   <div class="container" style="padding:2% 5%">
-    <h2 class="font-italic font-weight-light">{{ text }}</h2>
+    <!-- <h2 class="font-italic font-weight-light">{{ text }}</h2> -->
     <div class="row"  style="padding:1% 15%">
       {% if  ( multiLabel['anger'] == 1): %}
       <div class="col">
@@ -81,6 +81,8 @@
   <br><br>
 
   <script>
+  
+  document.getElementById('exampleFormControlTextarea2').value = "{{ text }}";
   
   var EMOTIONS = ['Anger', 'Fear', 'Happiness', 'Sadness'];
 		var barChartData = {
